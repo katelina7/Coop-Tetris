@@ -1,13 +1,15 @@
-import {draw} from './draw.js';
-
 var gameScreen = document.getElementById("myCanvas");
 var ctx = gameScreen.getContext("2d");
-var gameMapXY = [];
-var offsetY = 80;
+
+//0 = available, 1 = filled
+//10 x 21 grid, top row is to check game over
+var gameMapXY = [];  
+var offsetY = 0;
 var height = 800;
 var offsetX = 440;
 var width = 400;
 var blockSize = 40;
+
 
 var padding = {x:0, y:0};
 var blocks = new Array({x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0}, "block type", "#86E2FF");
@@ -18,12 +20,11 @@ document.addEventListener("keydown", keyDown);
 init();
 gameStart();
 var game = setInterval(update, 800);
-draw();
 
 function init(){
     
     ctx.beginPath();
-    ctx.rect(340, 80, 600, 800);
+    ctx.rect(340, 0, 600, 800);
     ctx.fillStyle = "#3E3E3E";
     ctx.fill();
     ctx.closePath();
@@ -39,7 +40,7 @@ function init(){
     ctx.stroke();
 
     for (x = 0; x < 10; x++){
-        gameMapXY.push(new Array(20));
+        gameMapXY.push(new Array(21));
     }
 }
 
@@ -83,8 +84,10 @@ function clearBlocks(){
 }
 
 function gameStart(){
-    for (i = 0; i < floor.length; i++){
-        floor[i] = 19;
+    for (x = 0; x < 10; x++){
+        for (y = 0; y < 21; y++){
+            gameMapXY[x][y] = 0;
+        }
     }
 
     for (y = 0; y < 20; y++){
@@ -99,28 +102,37 @@ function setBlocks(){
     ranBlocks[ran]();
 }
 
-function validFloor(){
-    for (i = 0; i < 4; i++){
-        if (blocks[i].y >= floor[blocks[i].x]){
-            return false;
-        }
+function validBlock(x, y){
+    
+    if (!validX(x)){
+        return false;
     }
+    if (!validY(y)){
+        return false;
+    }
+    if (gameMapXY[x][y + 1] == 1){
+        return false;
+    }
+    
     return true;
 }
 
-function xInBound(x){
+function validX(x){
     return (x >= 0 && x < 10);
 }
 
-function yInBound(y){
-    return (y >= 0 && y < 20);
+function validY(y){
+    return (y >= -1 && y < 20);
 }
 
+function validDrawY(y){
+    return (y >= 0 && y < 20);
+}
 function keyDown(e){
-    var move = true;
+    
     var dx = 0;
     var dy = 0;
-    move = true;
+    
     clearBlocks();
 
     if (e.key == "ArrowRight"){
@@ -133,24 +145,11 @@ function keyDown(e){
         dy = 1;
     }
 
-    for (i = 0; i < 4; i++){
-        var newX = blocks[i].x + dx;
-        var newY = blocks[i].y + dy;
-        if (!(xInBound(newX) && yInBound(newY))){
-            move = false;
-        }
-        if (newY > floor[newX]){
-            move = false;
-        }
-    }
-
-    if (move){
-        moveBlocks(dx, dy);
-        dx = 0;
-        dy = 0;
-    }
+    moveBlocks(dx, dy);
     drawBlocks();
-
+    
+    dx = 0;
+    dy = 0;
 }
 
 function rotate(){
@@ -166,6 +165,11 @@ function rotate(){
             blocks[i].y += blocks[0].y;
             blocks[i].x += padding.x;
             blocks[i].y += padding.y;
+            if (blocks[i].x < 0){
+                moveBlocks(1, 0);
+            } else if (blocks[i].x > 10){
+                moveBlocks(-1, 0);
+            } else if (blocks[i].y )
         }
 
     }else{
@@ -175,21 +179,23 @@ function rotate(){
 
 function moveBlocks(dx, dy){
     for (i = 0; i < 4; i++){
+        var newX = blocks[i].x + dx;
+        var newY = blocks[i].y + dy;
+        
+        if (!validBlock(newX, newY)){
+            return false;
+        }
+    }
+    for (i = 0; i < 4; i++){
         blocks[i].x += dx;
         blocks[i].y += dy;
     }
-}
-
-function unMove(dx, dy){
-    for (i = 0; i < 4; i++){
-        blocks[i].x -= dx;
-        blocks[i].y -= dy;
-    }
+    return true;
 }
 
 function drawBlocks(){
     for (i = 0; i < 4; i++){
-        if (xInBound(blocks[i].x) && yInBound(blocks[i].y)){
+        if (validX(blocks[i].x) && validDrawY(blocks[i].y)){
             ctx.beginPath();
             // ctx.rect(offsetX + blockSize * blocks[i].x, offsetY + blockSize * blocks[i].y, 40, 40);
             ctx.rect(offsetX + blockSize * blocks[i].x + 1, offsetY + blockSize * blocks[i].y + 1, 36, 36);
@@ -204,31 +210,36 @@ function update(){
     
     clearBlocks();
     
-    if (validFloor()){
-        moveBlocks(0, 1);
+    
+    if (moveBlocks(0, 1)){
         drawBlocks();            
-        
     } else{
+
+        //update game map
         for (i = 0; i < 4; i++){
-            var min = floor[blocks[i].x];
-            var check = blocks[i].y - 1;
-            if (min > check){
-                floor[blocks[i].x] = check;
-            }
+            gameMapXY[blocks[i].x][blocks[i].y + 1] = 1;
         }
-        for (i = 0; i < 10; i++){
-            if (floor[i] < 0){
+
+        //check if game over
+        for (x = 0; x < 10; x++){
+            if (gameMapXY[x][0] == 1){
                 clearInterval(game);
                 alert("game over");
+                break;
             }
         }
         drawBlocks();            
 
         //if second row is filled, move new block up one row.
         setBlocks();
-        if (!validFloor()){
-            moveBlocks(0, -1);
+
+        for (i = 0; i < 4; i++){
+            if (!validBlock(blocks[i].x,blocks[i].y)){
+                moveBlocks(0, -1);
+                break;
+            }
         }
+        
         drawBlocks();            
     }
 
@@ -286,10 +297,10 @@ function blockL(){
 }
 
 function blockI(){
-    blocks[0].x = 3; blocks[0].y = 0;
-    blocks[1].x = 4; blocks[1].y = 0;
-    blocks[2].x = 5; blocks[2].y = 0;
-    blocks[3].x = 6; blocks[3].y = 0;
+    blocks[0].x = 3; blocks[0].y = 1;
+    blocks[1].x = 4; blocks[1].y = 1;
+    blocks[2].x = 5; blocks[2].y = 1;
+    blocks[3].x = 6; blocks[3].y = 1;
     blocks[4] = "blockI";
     blocks[5] = "#88E2FF";
     padding.x = 0; padding.y = 0;
