@@ -11,7 +11,6 @@ var width = 400;
 var blockSize = 40;
 
 
-var padding = {x:0, y:0};
 var blocks = new Array({x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0}, "block type", "#86E2FF");
 var ranBlocks = [blockO, blockS, blockZ, blockI, blockJ, blockL, blockT];
 var ranNum = 0;
@@ -152,28 +151,60 @@ function keyDown(e){
     dy = 0;
 }
 
-function rotate(){
-    if (blocks[4] != "blockI"){
-        for (i = 1; i < 4; i++){
-            blocks[i].x -= blocks[0].x;
-            blocks[i].y -= blocks[0].y;
-            temp = blocks[i].x;
-            blocks[i].x = blocks[i].y;
-            blocks[i].y = temp;
-            blocks[i].x = blocks[i].x * -1;
-            blocks[i].x += blocks[0].x;
-            blocks[i].y += blocks[0].y;
-            blocks[i].x += padding.x;
-            blocks[i].y += padding.y;
-            if (blocks[i].x < 0){
-                moveBlocks(1, 0);
-            } else if (blocks[i].x > 10){
-                moveBlocks(-1, 0);
-            } else if (blocks[i].y )
-        }
 
-    }else{
-        
+function rotate(){
+    let newPos = new Array({x:0,y:0}, {x:0,y:0}, {x:0,y:0}, {x:0,y:0});
+
+    if (blocks[4] == "blockO"){
+        return;
+    }
+    newPos[0] = blocks[0];
+    for (i = 1; i < 4; i++){
+        newPos[i].y = blocks[i].x - newPos[0].x;
+        newPos[i].x = blocks[i].y - newPos[0].y;
+        if (blocks[4] == "blocksI"){
+            newPos[i].y = newPos[i].y * -1;
+        } else{
+            newPos[i].x = newPos[i].x * -1;
+        }
+        newPos[i].x += newPos[0].x;
+        newPos[i].y += newPos[0].y;
+    }
+
+    //make sure there's room for rotation
+    if (blocks[4] == "blocksI"){
+        blocks[0] = newPos[1];
+        blocks[1] = newPos[0];
+        blocks[2] = newPos[2];
+        blocks[3] = newPos[3];
+    } else{
+        for (i = 0; i < 4; i++){
+            blocks[i] = newPos[i];
+        }
+    }
+    
+}
+
+function wallKick(){
+    let count = 0;
+    for (i = 0; i < 4; i++){
+        if (blocks[i].x < 0){
+            count--;
+        } else if (blocks[i].x > 10){
+            count++;
+        }
+    }
+    if (!moveBlocks(count, 0)){
+        return false;
+    }
+
+}
+
+function floorKick(){
+    for (i = 0; i < 4; i++){
+        if (gameMapXY[blocks[i].x][blocks[i].y + 1] == 1){
+            moveBlocks(0, -1);
+        }
     }
 }
 
@@ -253,7 +284,6 @@ function blockO(){
     blocks[3].x = 5; blocks[3].y = 1;
     blocks[4] = "blockO";
     blocks[5] = "#FCFF65";
-    padding.x = 1; padding.y = 0;
 }
 
 function blockS(){
@@ -263,7 +293,6 @@ function blockS(){
     blocks[3].x = 3; blocks[3].y = 1;
     blocks[4] = "blockS";
     blocks[5] = "#69FD66";
-    padding.x = 0; padding.y = 0;
 }
 
 function blockZ(){
@@ -273,7 +302,6 @@ function blockZ(){
     blocks[3].x = 5; blocks[3].y = 1;
     blocks[4] = "blockZ";
     blocks[5] = "#FF8EB7";
-    padding.x = 0; padding.y = 0;
 }
 
 function blockJ(){
@@ -283,27 +311,24 @@ function blockJ(){
     blocks[3].x = 5; blocks[3].y = 1;
     blocks[4] = "blockJ";
     blocks[5] = "#3C8AFF";
-    padding.x = 0; padding.y = 0;
 }
 
 function blockL(){
     blocks[0].x = 4; blocks[0].y = 1;
     blocks[1].x = 3; blocks[1].y = 1;
     blocks[2].x = 5; blocks[2].y = 1;
-    blocks[3].x = 3; blocks[3].y = 0;
+    blocks[3].x = 5; blocks[3].y = 0;
     blocks[4] = "blockL";
     blocks[5] = "#FF7A00";
-    padding.x = 0; padding.y = 0;
 }
 
 function blockI(){
-    blocks[0].x = 3; blocks[0].y = 1;
-    blocks[1].x = 4; blocks[1].y = 1;
-    blocks[2].x = 5; blocks[2].y = 1;
+    blocks[0].x = 4; blocks[0].y = 1;
+    blocks[1].x = 5; blocks[1].y = 1;
+    blocks[2].x = 3; blocks[2].y = 1;
     blocks[3].x = 6; blocks[3].y = 1;
     blocks[4] = "blockI";
     blocks[5] = "#88E2FF";
-    padding.x = 0; padding.y = 0;
 }
 
 function blockT(){
@@ -313,5 +338,4 @@ function blockT(){
     blocks[3].x = 5; blocks[3].y = 1;
     blocks[4] = "blockT";
     blocks[5] = "#B251FF";
-    padding.x = 0; padding.y = 0;
 }
